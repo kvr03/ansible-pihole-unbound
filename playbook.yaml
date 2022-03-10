@@ -1,0 +1,43 @@
+---
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Add the two users
+      user:
+        name: "{{ item }}"
+        password: $5$N/Bh5D15iAML.$u7wimfFBZS7u6U0/tXId9JZI73OG9TG9yVjqfZNEwr.
+        group: mnoj
+      become: yes
+      loop:
+        - varshu
+        - maneesh
+
+    - name: add user varshu to sudoer
+      command: usermod -aG sudo varshu
+      become: yes
+    
+    - name: check if folder exists
+      stat:
+        path: /home/varshu/.ssh 
+      register: register_name
+
+    - name: Create a directory if it does not exist
+      command: mkdir /home/varshu/.ssh 
+      when: not register_name.stat.exists
+    
+    - name: change ssh folder permissions
+      command: chown 0755 /home/varshu/.ssh
+      become: yes
+
+    - name: Copy file with owner and permissions
+      copy:
+        src: /home/manoj/.ssh/id_rsa.pub
+        dest: /home/varshu/.ssh/id_rsa.pub
+        mode: '0400'
+
+    - name: Disable SSH password authentication
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#PasswordAuthentication no'
+        line: 'PasswordAuthentication yes'
+      become: yes
